@@ -1,0 +1,36 @@
+# Hephaestus v0.1 — HDFS Latency Profile
+model:
+  name: "Qwen/Qwen2.5-0.5B-Instruct"
+  dtype: "float16"
+
+dataset:
+  data/hdfs/hdfs_train_conversations.jsonl
+  data/hdfs/hdfs_test_conversations.jsonl
+
+lora:
+  rank: 64
+  alpha: 128
+  dropout: 0.05
+  target_modules: ["q_proj", "k_proj", "v_proj", "o_proj"]
+
+training:
+  max_steps: 100
+  learning_rate: 0.00005
+  warmup_steps: 10
+  batch_size: 2
+  gradient_accumulation_steps: 2
+  optimizer: "adamw_bnb_8bit"
+  gradient_checkpointing: true
+  bf16: true
+  max_length: 512
+
+evaluation:
+  quality_gate: 0.90
+  max_test_samples: 500
+
+export:
+  quantize: "int4"
+  benchmark: true
+
+output:
+  dir: "outputs/hdfs-0.5b"

@@ -1,0 +1,14 @@
+# Outputs
+outputs/
+checkpoints/
+
+# Archive
+archive/
+
+# Notebooks (contain tokens, large files)
+kaggle/
+
+# IDE
+.vscode
+.idea
+*.swp

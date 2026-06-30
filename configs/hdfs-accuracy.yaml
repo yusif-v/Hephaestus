@@ -1,0 +1,40 @@
+# Hephaestus v0.1 — HDFS Accuracy Profile
+model:
+  name: "Qwen/Qwen2.5-3B-Instruct"
+  dtype: "float16"
+
+dataset:
+  train_path: "data/hdfs/hdfs_train_conversations.jsonl"
+  test_path: "data/hdfs/hdfs_test_conversations.jsonl"
+
+lora:
+  rank: 256
+  alpha: 512
+  dropout: 0.05
+  target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+
+training:
+  max_steps: 200
+  learning_rate: 0.00002
+  warmup_steps: 20
+  batch_size: 1
+  gradient_accumulation_steps: 2
+  optimizer: "adamw_bnb_8bit"
+  gradient_checkpointing: true
+  bf16: true
+  max_length: 2048
+  logging_steps: 10
+
+evaluation:
+  quality_gate: 0.96
+  metrics: ["accuracy", "precision", "recall", "f1"]
+  max_test_samples: 500
+
+export:
+  quantize: null
+  format: "safetensors"
+  benchmark: true
+
+output:
+  dir: "outputs/hdfs-3b"
+  save_model_card: true
