@@ -6,6 +6,25 @@ from dataclasses import dataclass, field, asdict
 from typing import List, Optional
 
 
+DEFAULT_SYSTEM_PROMPT_HDFS = (
+    "You are a HDFS log anomaly detection expert. "
+    "Classify each log entry as ANOMALY or NORMAL. "
+    "Respond with ONLY the classification label followed by a brief reason."
+)
+
+DEFAULT_SYSTEM_PROMPT_CVE = (
+    "You are a cybersecurity expert specializing in CVE analysis. "
+    "Given a CVE description, determine its severity level (CRITICAL, HIGH, MEDIUM, LOW) "
+    "and provide a brief risk summary."
+)
+
+DEFAULT_SYSTEM_PROMPT_PHISHING = (
+    "You are a phishing email detection expert. "
+    "Classify each email as PHISHING or LEGITIMATE. "
+    "Respond with ONLY the classification label and a brief reason."
+)
+
+
 @dataclass
 class ModelConfig:
     name: str = "Qwen/Qwen2.5-3B-Instruct"
@@ -17,6 +36,7 @@ class DatasetConfig:
     train_path: str = "data/train.jsonl"
     test_path: str = "data/test.jsonl"
     max_samples: Optional[int] = None
+    max_val_samples: Optional[int] = 500
 
 
 @dataclass
@@ -41,6 +61,8 @@ class TrainingConfig:
     bf16: bool = True
     max_length: int = 2048
     logging_steps: int = 10
+    save_strategy: str = "no"
+    max_grad_norm: float = 1.0
     seed: int = 42
 
 
@@ -51,6 +73,8 @@ class EvaluationConfig:
         "accuracy", "precision", "recall", "f1"
     ])
     max_test_samples: int = 500
+    task_type: str = "binary"  # binary, multiclass, per_class
+    classes: Optional[List[str]] = None  # for multiclass per-class metrics
 
 
 @dataclass
@@ -58,6 +82,8 @@ class ExportConfig:
     quantize: Optional[str] = None
     format: str = "safetensors"
     benchmark: bool = True
+    gguf: bool = False
+    llama_cpp_convert_path: str = "/usr/local/bin/convert-hf-to-gguf.py"
 
 
 @dataclass
@@ -68,6 +94,8 @@ class OutputConfig:
 
 @dataclass
 class HephaestusConfig:
+    task_name: str = "hdfs-anomaly"
+    system_prompt: str = DEFAULT_SYSTEM_PROMPT_HDFS
     model: ModelConfig = field(default_factory=ModelConfig)
     dataset: DatasetConfig = field(default_factory=DatasetConfig)
     lora: LoraConfig = field(default_factory=LoraConfig)
@@ -91,7 +119,13 @@ class HephaestusConfig:
                     filtered[k] = v
             return cls_type(**filtered)
 
+        # Extract top-level task_name and system_prompt
+        task_name = raw.get("task_name", "hdfs-anomaly")
+        system_prompt = raw.get("system_prompt", DEFAULT_SYSTEM_PROMPT_HDFS)
+
         return cls(
+            task_name=task_name,
+            system_prompt=system_prompt,
             model=_make(ModelConfig, raw.get("model")),
             dataset=_make(DatasetConfig, raw.get("dataset")),
             lora=_make(LoraConfig, raw.get("lora")),
@@ -105,18 +139,21 @@ class HephaestusConfig:
     def from_profile(cls, profile: str) -> "HephaestusConfig":
         profiles = {
             "latency": cls(
+                task_name="hdfs-anomaly",
                 model=ModelConfig(name="Qwen/Qwen2.5-0.5B-Instruct"),
                 lora=LoraConfig(rank=64, alpha=128),
                 training=TrainingConfig(batch_size=2, max_length=512),
                 export=ExportConfig(quantize="int4"),
             ),
             "balanced": cls(
+                task_name="hdfs-anomaly",
                 model=ModelConfig(name="Qwen/Qwen2.5-1.5B-Instruct"),
                 lora=LoraConfig(rank=128, alpha=256),
                 training=TrainingConfig(batch_size=2, max_length=1024),
                 export=ExportConfig(quantize="int4"),
             ),
             "accuracy": cls(
+                task_name="hdfs-anomaly",
                 model=ModelConfig(name="Qwen/Qwen2.5-3B-Instruct"),
                 lora=LoraConfig(rank=256, alpha=512),
                 training=TrainingConfig(batch_size=1, max_length=2048),
@@ -128,4 +165,5 @@ class HephaestusConfig:
         return profiles[profile]
 
     def to_dict(self):
-        return asdict(self)
+        d = asdict(self)
+        return d
