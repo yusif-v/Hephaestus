@@ -8,6 +8,9 @@ archive/
 # Notebooks (contain tokens, large files)
 kaggle/
 
+# Specs (internal design docs)
+specs/
+
 # IDE
 .vscode
 .idea
