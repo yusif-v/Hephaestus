@@ -12,13 +12,12 @@ graph TB
     Setup --> Load[fa:fa-database Data + Model]
     Config --> Load
 
-    Load --> Train[fa:fa-graduation-cap Training<br/>SFT + LoRA + 8-bit Adam]
+    Load --> Train[fa:fa-graduation-cap Training<br/>SFT + LoRA]
     Train --> Eval[fa:fa-check-circle Evaluation<br/>Accuracy / F1 / Quality Gate]
 
     Eval --> Pass{Pass Gate?}
-    Pass -->|Yes| Export[fa:fa-download Export<br/>Merge + Benchmark]
     Pass -->|No| Train
-
+    Pass -->|Yes| Export[fa:fa-download Export<br/>Merge + Benchmark]
     Export --> Model([fa:fa-robot Production Model<br/>Safetensors + Card])
 ```
 
@@ -26,21 +25,30 @@ graph TB
 
 ## Module Design
 
-```mermaid    subgraph "Hephaestus Package"
-        A[setup.py]Environment| B[loader.py]
-        C[config.py] -->|Settings| B
-        B -->|Model + Data| D[trainer.py]
-        D -->|Trained Model| E[evaluator.py]
-        E -->|Pass + Metrics| F[exporter.py]
+```mermaid
+graph LR
+    subgraph Hephaestus_Package["Hephaestus Package"]
+        A["fa:cog setup.py<br/>Environment"]
+        B["fa:fa-database loader.py<br/>Data + Model"]
+        C["fa:fa-file-alt config.py<br/>Config"]
+        D["fa:fa-graduation-cap trainer.py<br/>Training"]
+        E["fa:fa-check-circle evaluator.py<br/>Evaluation"]
+        F["fa:fa-download exporter.py<br/>Export"]
     end
 
-    G[cli.py] --> A
-    G --> C
-    G --> D
-    G --> E
-    G --> F
+    C -->|Settings| B
+    A --> B
+    B -->|Model + Data| D
+    D -->|Trained Model| E
+    E -->|Pass + Metrics| F
 
-    H[__main__.py] --> G
+    CLI["fa:fa-terminal cli.py"] --> A
+    CLI --> C
+    CLI --> D
+    CLI --> E
+    CLI --> F
+
+    MAIN["__main__.py"] --> CLI
 ```
 
 ---
