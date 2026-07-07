@@ -1,0 +1,15 @@
+{
+  "id": "yusifovtelman/heimdall-anomaly-detection-lora-training",
+  "title": "Heimdall Anomaly Detection - LoRA Training",
+  "code_file": "heimdall-anomaly.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": [
+    "mirzayasirabdullah07/logging-and-monitoring-anomalies-dataset"
+  ],
+  "competition_sources": [],
+  "kernel_sources": []
+}
