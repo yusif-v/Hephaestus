@@ -1,0 +1,47 @@
+# Hephaestus v0.2 — Heimdall Anomaly Detection
+task_name: heimdall-anomaly
+system_prompt: "You are a security surveillance expert. Given a file system event or log entry, classify if ANOMALOUS or NORMAL. Anomalies include: rapid file creation, suspicious file types (.key, .pem, .db in temp dirs), log patterns indicating compromise. Respond with ONLY the classification label followed by a brief reason."
+
+model:
+  name: "Qwen/Qwen2.5-0.5B-Instruct"
+  dtype: "float16"
+
+dataset:
+  train_path: "data/heimdall/heimdall_train.jsonl"
+  test_path: "data/heimdall/heimdall_test.jsonl"
+  max_samples: 1000
+  max_val_samples: 200
+
+lora:
+  rank: 64
+  alpha: 128
+  dropout: 0.05
+  target_modules: ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+
+training:
+  max_steps: 100
+  learning_rate: 0.00002
+  warmup_steps: 10
+  batch_size: 4
+  gradient_accumulation_steps: 2
+  optimizer: "adamw_bnb_8bit"
+  gradient_checkpointing: true
+  bf16: true
+  max_length: 512
+  logging_steps: 10
+
+evaluation:
+  quality_gate: 0.97
+  metrics: ["accuracy", "f1"]
+  max_test_samples: 200
+  task_type: "binary"
+  classes: ["ANOMALOUS", "NORMAL"]
+
+export:
+  quantize: "int4"
+  format: "safetensors"
+  benchmark: true
+
+output:
+  dir: "outputs/heimdall-0.5b"
+  save_model_card: true
