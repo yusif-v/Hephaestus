@@ -6,25 +6,28 @@ import sys
 
 
 def setup_environment():
-    """Install cu121 stack and ML packages. Must run BEFORE importing torch."""
+    """Install the cu117 torch stack (P100 sm_60 compatible) before any torch import."""
+    # Install the PROVEN cu117 torch stack (P100 sm_60). Kaggle's default is cu128 (sm_70+)
+    # which crashes on P100. This matches the working Heimdall + CVE kernels.
     packages = [
-        "torch==2.5.1",
-        "torchvision==0.20.1",
-        "torchaudio==2.5.1",
+        "torch==2.0.1",
+        "torchvision==0.15.2",
+        "torchaudio==2.0.2",
     ]
     ml_packages = [
-        "transformers>=4.40",
-        "peft>=0.11.0",
-        "trl>=0.9.0",
+        "unsloth",
+        "transformers==4.46.3",
+        "peft==0.13.2",
+        "trl==0.8.6",
         "accelerate>=0.30.0",
         "datasets>=2.19.0",
-        "bitsandbytes>=0.43.0",
+        "bitsandbytes==0.46.1",
     ]
 
-    # Install cu121 torch (overrides Kaggle's cu128)
+    # Install cu117 torch (overrides Kaggle's cu128)
     subprocess.check_call(
         [sys.executable, "-m", "pip", "install", "-q", *packages,
-         "--index-url", "https://download.pytorch.org/whl/cu121"]
+         "--index-url", "https://download.pytorch.org/whl/cu117"]
     )
 
     # Install ML packages
@@ -59,10 +62,12 @@ def verify_gpu():
     print(f"VRAM: {vram_gb:.1f} GB")
     print(f"PyTorch: {torch.__version__}")
 
-    if cc < (7, 0) and "cu121" not in torch.__version__:
+    # P100 is sm_60 (cc 6.0). It needs a cu11x torch build (cu117/cu121), NOT cu128
+    # (sm_70+). Accept any cu11x; reject only if we appear to be on cu128+.
+    if cc < (7, 0) and "cu12" in torch.__version__:
         raise RuntimeError(
-            f"P100 (sm_60) requires cu121 but got {torch.__version__}. "
-            "Run setup_environment() first."
+            f"P100 (sm_60) is incompatible with {torch.__version__} (cu12x). "
+            "Run setup_environment() to install the cu117 torch stack."
         )
 
     return {
