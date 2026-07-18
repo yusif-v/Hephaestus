@@ -7,17 +7,15 @@ name = "hephaestus"
 version = "0.1.0"
 description = "Forge tiny, purpose-built LLMs from any base model"
 requires-python = ">=3.10"
-# Pinned to the PROVEN train stack.
-# Verified working on Kaggle P100 (sm_60):
-#   - torch 2.0.1+cu117  (NOT 2.5.1 — Kaggle's cu128 default is sm_70+ and crashes on P100)
-#   - unsloth + trl 0.8.6 + transformers 4.46.3 (Heimdall + CVE kernels)
-# The unpinned ranges below were the old (broken) declarations; they pulled
-# incompatible torch/cu combos. Keep these pinned until CI proves a newer set.
+# Pinned to the PROVEN train stack (memory 2026-07-18, verified on Kaggle P100 sm_60).
+#   - torch 2.3.1+cu121  (Kaggle default cu128 is sm_70+ and crashes on P100)
+#   - trl 0.8.6 --no-deps (keep our torch), transformers 4.46.3, peft 0.13.2, bitsandbytes 0.46.1
+#   - AVOID unsloth (unsloth-zoo missing on PyPI); use plain transformers+peft+SFTTrainer
+# Do NOT loosen these ranges until a Kaggle run re-verifies a newer set.
 dependencies = [
-    "torch==2.0.1",
-    "torchvision==0.15.2",
-    "torchaudio==2.0.2",
-    "unsloth",
+    "torch==2.3.1",
+    "torchvision==0.18.1",
+    "torchaudio==2.3.1",
     "transformers==4.46.3",
     "peft==0.13.2",
     "trl==0.8.6",
@@ -25,6 +23,12 @@ dependencies = [
     "datasets>=2.19.0",
     "bitsandbytes==0.46.1",
     "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# Pure-logic test deps (CPU only); see PR #2.
+test = [
+    "pytest>=7.0",
 ]
 
 [tool.setuptools.packages.find]

@@ -6,16 +6,16 @@ import sys
 
 
 def setup_environment():
-    """Install the cu117 torch stack (P100 sm_60 compatible) before any torch import."""
-    # Install the PROVEN cu117 torch stack (P100 sm_60). Kaggle's default is cu128 (sm_70+)
-    # which crashes on P100. This matches the working Heimdall + CVE kernels.
+    """Install the cu121 torch stack (P100 sm_60 compatible) before any torch import."""
+    # Install the PROVEN cu121 torch stack (P100 sm_60). Kaggle's default is cu128 (sm_70+)
+    # which crashes on P100. Mirrors the working CVE kernel (torch 2.3.1+cu121,
+    # trl 0.8.6 --no-deps, plain transformers+peft, NO unsloth).
     packages = [
-        "torch==2.0.1",
-        "torchvision==0.15.2",
-        "torchaudio==2.0.2",
+        "torch==2.3.1",
+        "torchvision==0.18.1",
+        "torchaudio==2.3.1",
     ]
     ml_packages = [
-        "unsloth",
         "transformers==4.46.3",
         "peft==0.13.2",
         "trl==0.8.6",
@@ -24,10 +24,10 @@ def setup_environment():
         "bitsandbytes==0.46.1",
     ]
 
-    # Install cu117 torch (overrides Kaggle's cu128)
+    # Install cu121 torch (overrides Kaggle's cu128)
     subprocess.check_call(
         [sys.executable, "-m", "pip", "install", "-q", *packages,
-         "--index-url", "https://download.pytorch.org/whl/cu117"]
+         "--index-url", "https://download.pytorch.org/whl/cu121"]
     )
 
     # Install ML packages
