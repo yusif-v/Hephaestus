@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  cpu-smoke:
+    # CPU-only: verifies the pure-logic core (config, quality gate, label
+    # extraction) without a GPU. This is the gate that must stay green so a
+    # bad change to eval/config/gate can never ship silently.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install CPU torch + package (+ test extra)
+        run: |
+          python -m pip install --upgrade pip
+          # CPU torch: no CUDA index URL needed.
+          pip install torch==2.0.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install -e ".[test]"
+      - name: Run tests
+        run: pytest -q tests/
+
+  docker-build:
+    # Builds the GPU training image to ensure the pinned deps still resolve.
+    # Does NOT run training (needs GPU secret + gated dataset). Failures here
+    # catch a broken Dockerfile / dependency pin early.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build training image
+        run: docker build -t hephaestus:ci .

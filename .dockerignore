@@ -1,0 +1,9 @@
+# keep the training image lean
+.git
+.github
+kaggle_kernel/unsloth_compiled_cache
+kaggle_kernel/huggingface_tokenizers_cache
+**/__pycache__
+*.pyc
+outputs
+data

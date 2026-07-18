@@ -12,6 +12,7 @@ from .trainer import train_model, auto_configure
 from .evaluator import evaluate_model
 from .exporter import export_model
 from .registry import list_models, find_model, remove_model
+from .quality_gate import assert_gate
 
 
 def cmd_train(args):
@@ -222,6 +223,15 @@ def _print_summary(config, eval_results, training_metrics):
         print("\n✗ Quality gate NOT passed.")
     else:
         print("\n✓ Quality gate passed.")
+
+    # Hard fail: a failed gate must produce a non-zero exit code so CI/release
+    # pipelines cannot ship a model that missed the threshold. (Previously only
+    # printed.) The evaluator computes the pass flag; quality_gate asserts it.
+    assert_gate(
+        eval_results,
+        gate_accuracy=config.evaluation.quality_gate,
+        gate_f1=config.evaluation.quality_gate if config.evaluation.task_type == "multiclass" else None,
+    )
 
 
 if __name__ == "__main__":
