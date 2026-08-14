@@ -1,0 +1,3 @@
+path,event,recent_count,score_v
+/tmp/one,create,3,44
+/etc/hosts,write,2,66
