@@ -1,0 +1,5 @@
+{"path": "/tmp/stager86", "event": "create", "recent_count": 4, "score_v": 51}
+{"path": "/Users/l/finance/Q2143.xlsx.crypt", "event": "modify", "recent_count": 111, "score_v": 94}
+{"path": "/etc/nginx/nginx.conf", "event": "write", "recent_count": 2, "score_v": 66}
+{"path": "/var/log/auth.log", "event": "append", "recent_count": 9, "score_v": 91}
+{"path": "/home/u/docs/report.pdf", "event": "read", "recent_count": 1, "score_v": 5}
