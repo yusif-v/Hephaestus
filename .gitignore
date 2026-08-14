@@ -11,7 +11,14 @@ kaggle/
 # Specs (internal design docs)
 specs/
 
+# Git worktrees
+.worktrees/
+
 # IDE
 .vscode
 .idea
 *.swp
+
+# Secrets
+.env
+*.env
