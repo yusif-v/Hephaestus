@@ -1,7 +1,7 @@
 """Deterministic labeling — declarative rules, first-match-wins by priority."""
 
 import re
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from .spec import RuleConfig
 
@@ -15,6 +15,28 @@ def _coerce(value: Any, compare: Any) -> Any:
     return value
 
 
+def _compare(actual: Any, value: Any, op: str) -> Optional[bool]:
+    """Compare, returning None when the values are not comparable (fail-closed)."""
+    if isinstance(value, (int, float)) and isinstance(actual, str):
+        return None
+    try:
+        if op == "gt":
+            return actual > value
+        if op == "gte":
+            return actual >= value
+        if op == "lt":
+            return actual < value
+        if op == "lte":
+            return actual <= value
+        if op == "eq":
+            return actual == value
+        if op == "neq":
+            return actual != value
+    except TypeError:
+        return None
+    return None
+
+
 def match_condition(when: Dict[str, Any], row: Dict[str, Any]) -> bool:
     field = when.get("field")
     op = when.get("op")
@@ -23,18 +45,8 @@ def match_condition(when: Dict[str, Any], row: Dict[str, Any]) -> bool:
         return False
     actual = row[field]
     actual = _coerce(actual, value)
-    if op == "eq":
-        return actual == value
-    if op == "neq":
-        return actual != value
-    if op == "gt":
-        return _coerce(actual, value) > value
-    if op == "gte":
-        return _coerce(actual, value) >= value
-    if op == "lt":
-        return _coerce(actual, value) < value
-    if op == "lte":
-        return _coerce(actual, value) <= value
+    if op in ("gt", "gte", "lt", "lte", "eq", "neq"):
+        return bool(_compare(actual, value, op))
     if op == "contains":
         return str(value) in str(actual)
     if op == "startswith":

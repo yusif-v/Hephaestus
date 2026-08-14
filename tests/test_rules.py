@@ -60,6 +60,15 @@ def test_comparison_ops_coerce_numeric_strings():
     assert match_condition({"field": "cpu", "op": "eq", "value": 5}, {"cpu": "5"})
 
 
+def test_non_numeric_string_vs_number_fails_closed():
+    assert not match_condition({"field": "cpu", "op": "gt", "value": 85},
+                               {"cpu": "N/A"})
+    assert not match_condition({"field": "cpu", "op": "eq", "value": 85},
+                               {"cpu": "N/A"})
+    assert not match_condition({"field": "cpu", "op": "lt", "value": 85},
+                               {"cpu": "N/A"})
+
+
 def test_regex_op():
     assert match_condition({"field": "path", "op": "regex", "value": r"\.(crypt|locked)$"},
                            {"path": "a.locked"})
