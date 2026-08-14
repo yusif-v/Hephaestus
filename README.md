@@ -47,3 +47,12 @@ See [docs/architecture.md](docs/architecture.md) for the full design.
 ||-------|----------|-----|------------|------||
 || Qwen2.5-0.5B | 91.0% | 90.7% | 6 min | 988 MB ||
 || Qwen2.5-3B | 96.0% | 95.1% | 17 min | ~6 GB ||
+
+## Forge — design your own dataset (v0.3)
+
+`python -m hephaestus forge` runs the full loop: an interactive interview, an LLM
+brain that designs a reviewable `dataset-spec.json`, a deterministic build engine
+that emits `train.jsonl`/`test.jsonl`, then a Kaggle training run and export.
+
+`python -m hephaestus dataset show spec.json` — review a spec.
+`python -m hephaestus dataset build spec.json` — build without training.
