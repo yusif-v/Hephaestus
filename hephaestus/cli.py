@@ -143,6 +143,55 @@ def cmd_models(args):
         remove_model(args.name)
 
 
+def _add_forge_subparser(subparsers):
+    p = subparsers.add_parser("forge", help="Full forge loop: interview -> design -> build -> train -> deliver")
+    p.add_argument("--resume", action="store_true", help="Resume from forge_state.json")
+    p.add_argument("--interview-only", action="store_true",
+                   help="Stop after design and print the spec")
+    p.add_argument("--out-dir", default="outputs/forge",
+                   help="Working/output directory (default: outputs/forge)")
+    p.add_argument("--dataset-slug", default=None, help="Kaggle dataset slug (required for train)")
+    p.add_argument("--kernel-slug", default=None, help="Kaggle kernel slug (required for train)")
+    return p
+
+
+def _add_dataset_subparser(subparsers):
+    p = subparsers.add_parser("dataset", help="Dataset operations")
+    p.add_argument("dataset_action", choices=["build", "show"],
+                   help="build from spec, or show readable summary")
+    p.add_argument("spec", type=str, nargs="?", help="Path to dataset-spec.json")
+    p.add_argument("--out-dir", default="outputs/forge",
+                   help="Output directory (default: outputs/forge)")
+    return p
+
+
+def _cmd_forge(args):
+    from .forge import run_forge
+    slug = args.dataset_slug
+    state = run_forge(
+        out_dir=args.out_dir,
+        dataset_slug=slug,
+        kernel_slug=args.kernel_slug,
+        push_kernel=bool(slug and args.kernel_slug),
+        interview_only=args.interview_only,
+        resume=args.resume,
+    )
+    print(f"\nForge stage: {state.get('stage')} (spec_hash={state.get('spec_hash')})")
+
+
+def _cmd_dataset(args):
+    from .spec import from_dict, render_summary
+    if args.dataset_action == "show":
+        spec = from_dict(json.load(open(args.spec)))
+        print(render_summary(spec))
+    else:  # build
+        from .build import build_dataset
+        spec = from_dict(json.load(open(args.spec)))
+        card = build_dataset(spec, args.out_dir)
+        print(f"Built {card['total_rows']} rows -> "
+              f"{args.out_dir}/{card['spec_hash']}/")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Hephaestus v0.2 — Forge tiny purpose-built LLMs")
     subparsers = parser.add_subparsers(dest="command", help="Command")
@@ -177,9 +226,17 @@ def main():
                               help="Action to perform")
     models_parser.add_argument("--name", type=str, help="Model name for find/remove")
 
+    # Forge subcommand (v0.3)
+    forge_parser = _add_forge_subparser(subparsers)
+    dataset_parser = _add_dataset_subparser(subparsers)
+
     args = parser.parse_args()
 
-    if args.command == "train":
+    if args.command == "forge":
+        _cmd_forge(args)
+    elif args.command == "dataset":
+        _cmd_dataset(args)
+    elif args.command == "train":
         cmd_train(args)
     elif args.command == "evaluate":
         cmd_evaluate(args)
