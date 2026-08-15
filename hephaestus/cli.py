@@ -159,7 +159,7 @@ def _add_dataset_subparser(subparsers):
     p = subparsers.add_parser("dataset", help="Dataset operations")
     p.add_argument("dataset_action", choices=["build", "show"],
                    help="build from spec, or show readable summary")
-    p.add_argument("spec", type=str, nargs="?", help="Path to dataset-spec.json")
+    p.add_argument("spec", type=str, help="Path to dataset-spec.json")
     p.add_argument("--out-dir", default="outputs/forge",
                    help="Output directory (default: outputs/forge)")
     return p
@@ -177,16 +177,22 @@ def _cmd_forge(args):
         resume=args.resume,
     )
     print(f"\nForge stage: {state.get('stage')} (spec_hash={state.get('spec_hash')})")
+    if args.interview_only:
+        from .spec import from_dict, render_summary
+        spec_path = os.path.join(args.out_dir, "dataset-spec.json")
+        with open(spec_path) as f:
+            spec = from_dict(json.load(f))
+        print("\n" + render_summary(spec))
 
 
 def _cmd_dataset(args):
     from .spec import from_dict, render_summary
+    with open(args.spec) as f:
+        spec = from_dict(json.load(f))
     if args.dataset_action == "show":
-        spec = from_dict(json.load(open(args.spec)))
         print(render_summary(spec))
     else:  # build
         from .build import build_dataset
-        spec = from_dict(json.load(open(args.spec)))
         card = build_dataset(spec, args.out_dir)
         print(f"Built {card['total_rows']} rows -> "
               f"{args.out_dir}/{card['spec_hash']}/")

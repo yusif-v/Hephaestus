@@ -38,6 +38,16 @@ def test_ingest_public_with_fake_loader():
     assert len(rows) == 2
 
 
+def test_ingest_public_dict_no_split_takes_first():
+    fake = lambda ds, split=None, trust_remote_code=False: {  # noqa: E731
+        "train": [{"path": "/a", "event": "create", "recent_count": 1}],
+        "test": [{"path": "/b", "event": "read", "recent_count": 2}],
+    }
+    src = PublicSourceConfig(dataset="fake/ds", split=None, label_field=None)
+    rows = ingest_public(src, {}, loader=fake)
+    assert rows == [{"path": "/a", "event": "create", "recent_count": 1}]
+
+
 def test_unified_table_merges_local_and_public():
     fake = lambda ds, split=None, trust_remote_code=False: {  # noqa: E731
         "train": [{"path": "/pub/x", "event": "create", "recent_count": 7}]

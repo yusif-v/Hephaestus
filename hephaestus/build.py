@@ -84,6 +84,12 @@ def build_dataset(
     if not rows:
         raise BuildError("no rows ingested from sources")
 
+    probe = next((r for r in rows if r), rows[0])
+    missing = [c for c in spec.features.inputs if c not in probe]
+    if missing:
+        raise BuildError(
+            f"source rows are missing input feature(s): {', '.join(missing)}")
+
     labeled, unmatched = _label_rows(rows, spec)
 
     # LLM gap-fill: only unmatched rows, capped at max_fraction of total.

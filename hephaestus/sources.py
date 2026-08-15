@@ -64,8 +64,8 @@ def ingest_public(
         from datasets import load_dataset as _default_loader
         loader = _default_loader
     ds = loader(source.dataset, split=source.split, trust_remote_code=True)
-    if isinstance(ds, dict) and source.split:
-        ds = ds[source.split]
+    if isinstance(ds, dict):
+        ds = ds[source.split] if source.split else next(iter(ds.values()))
     if hasattr(ds, "to_list"):
         ds = ds.to_list()
     return [_coerce_types(dict(r), field_types) for r in ds]

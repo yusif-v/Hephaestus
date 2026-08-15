@@ -49,15 +49,17 @@ def run_forge(
     state = load_state(out_dir)
 
     # Stage 1-2: interview + design (skipped when resuming after 'designed')
-    if state.get("stage") in (None, "designed") or not resume:
+    if not resume or state.get("stage") is None:
         draft = _run_interview()
         spec_dict = design_spec(draft)
         h = spec_hash(from_dict(spec_dict))
         with open(os.path.join(out_dir, "dataset-spec.json"), "w") as f:
             json.dump(spec_dict, f, indent=2)
         state = save_state(out_dir, {"stage": "designed", "spec_hash": h})
-        if interview_only:
-            return load_state(out_dir)
+
+    # Interview-only: stop after design (the design->build approval gate).
+    if interview_only:
+        return load_state(out_dir)
 
     # Stage 3: build (only if not already built)
     if load_state(out_dir).get("stage") == "designed":

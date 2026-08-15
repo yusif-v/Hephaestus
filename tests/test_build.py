@@ -94,6 +94,14 @@ def test_build_detects_no_signal(tmp_path):
         build_dataset(spec, str(tmp_path))
 
 
+def test_build_rejects_missing_input_columns(tmp_path):
+    spec = spec_fixture()
+    spec.features.inputs.append("mystery_col")
+    with pytest.raises(BuildError) as ei:
+        build_dataset(spec, str(tmp_path))
+    assert "mystery_col" in str(ei.value)
+
+
 def test_gap_fill_applied_and_capped(tmp_path):
     spec = spec_fixture()
     spec.labeling.llm_gap_fill = {"enabled": True, "max_fraction": 0.5}

@@ -2,8 +2,13 @@
 
 import json
 import os
+import urllib.error
 import urllib.request
 from typing import Callable, Optional
+
+
+class BrainRetryError(Exception):
+    """Transport/HTTP failure from the LLM call — safe to retry."""
 
 
 SCHEMA_HINT = (
@@ -44,8 +49,11 @@ def _default_llm(prompt: str) -> str:
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}" if api_key else "",
     })
-    with urllib.request.urlopen(req) as resp:
-        data = json.loads(resp.read().decode())
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = json.loads(resp.read().decode())
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
+        raise BrainRetryError(str(e)) from e
     return data["choices"][0]["message"]["content"]
 
 
@@ -59,7 +67,11 @@ def design_spec(
     prompt = build_brain_prompt(draft)
     last_error = None
     for _ in range(3):
-        raw = llm_fn(prompt)
+        try:
+            raw = llm_fn(prompt)
+        except BrainRetryError as e:  # transport/HTTP failure counts as an attempt
+            last_error = str(e)
+            continue
         try:
             spec = json.loads(raw)
         except json.JSONDecodeError as e:

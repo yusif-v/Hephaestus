@@ -1,7 +1,9 @@
 import copy
 import json
 
-from hephaestus.brain import design_spec, build_brain_prompt
+import pytest
+
+from hephaestus.brain import BrainRetryError, design_spec, build_brain_prompt, _default_llm
 from hephaestus.spec import validate, from_dict
 
 
@@ -83,3 +85,38 @@ def test_design_spec_retries_on_invalid_spec():
 
     spec = design_spec({"task_type": "score|label"}, llm_fn=flaky)
     assert calls["n"] == 2
+
+
+def test_design_spec_retries_on_transport_error():
+    calls = {"n": 0}
+
+    def flaky(prompt):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise BrainRetryError("connection reset")
+        return json.dumps(GOOD_SPEC)
+
+    spec = design_spec({"task_type": "score|label"}, llm_fn=flaky)
+    assert calls["n"] == 2
+    assert spec["task"]["task_type"] == "score|label"
+
+
+def test_design_spec_exhausts_retries_on_persistent_transport_error():
+    def always_down(prompt):
+        raise BrainRetryError("network unreachable")
+
+    with pytest.raises(ValueError, match="after 3 tries"):
+        design_spec({"task_type": "score|label"}, llm_fn=always_down)
+
+
+def test_default_llm_converts_http_error_to_retryable(monkeypatch):
+    import urllib.error
+
+    def fake_urlopen(req, timeout=None):
+        assert timeout == 60
+        raise urllib.error.HTTPError(req.full_url, 503, "unavailable", {}, None)
+
+    monkeypatch.setattr("hephaestus.brain.urllib.request.urlopen", fake_urlopen)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    with pytest.raises(BrainRetryError):
+        _default_llm("some prompt")
