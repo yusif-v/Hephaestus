@@ -71,3 +71,29 @@ def test_notebook_explicitly_tokenizes_with_prompt_masking(tmp_path):
     assert "apply_chat_template" in src
     assert "labels[:plen] = [-100] * plen" in src
     assert "train_ds = train_ds.map(tok_fn, batched=False)" in src
+
+
+def test_notebook_uses_max_steps_when_spec_sets_it(tmp_path):
+    s = spec()
+    s.output.max_steps = 800
+    result = build_kernel(
+        s, "latency", str(tmp_path),
+        dataset_slug="yusifovtelman/forge-filesystem-anomaly",
+        kernel_slug="yusifovtelman/forge-filesystem-anomaly-train",
+    )
+    src = open(result["notebook_path"]).read()
+    assert "max_steps=800" in src
+    assert "num_train_epochs" not in src
+
+
+def test_notebook_uses_full_epoch_when_max_steps_unset(tmp_path):
+    s = spec()
+    s.output.max_steps = None
+    result = build_kernel(
+        s, "latency", str(tmp_path),
+        dataset_slug="yusifovtelman/forge-filesystem-anomaly",
+        kernel_slug="yusifovtelman/forge-filesystem-anomaly-train",
+    )
+    src = open(result["notebook_path"]).read()
+    assert "num_train_epochs=1" in src
+    assert "max_steps=" not in src

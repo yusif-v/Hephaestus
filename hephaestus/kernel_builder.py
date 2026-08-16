@@ -82,13 +82,23 @@ def _build_notebook(spec: DatasetSpec, size_cfg: Dict[str, Any]) -> dict:
         "\n",
         "train_ds = train_ds.map(tok_fn, batched=False)\n",
     ]})
+    if spec.output.max_steps:
+        train_cfg = (
+            "                per_device_train_batch_size=8, gradient_accumulation_steps=4,\n"
+            "                max_steps=%d, learning_rate=2e-4, fp16=True,\n"
+            "                report_to='none', save_strategy='steps', save_steps=400,\n"
+            "                logging_steps=25,\n" % spec.output.max_steps
+        )
+    else:
+        train_cfg = (
+            "                per_device_train_batch_size=8, gradient_accumulation_steps=4,\n"
+            "                num_train_epochs=1, learning_rate=2e-4, fp16=True,\n"
+            "                report_to='none', save_strategy='epoch',\n"
+        )
     cells.append({"cell_type": "code", "execution_count": None, "metadata": {},
                   "outputs": [], "source": [
         "from trl import SFTConfig, SFTTrainer\n",
-        f"cfg = SFTConfig(output_dir='/kaggle/working/forge-lora',\n"
-        f"                per_device_train_batch_size=8, gradient_accumulation_steps=4,\n"
-        f"                num_train_epochs=1, learning_rate=2e-4, fp16=True,\n"
-        f"                report_to='none', save_strategy='epoch',\n"
+        f"cfg = SFTConfig(output_dir='/kaggle/working/forge-lora',\n{train_cfg}"
         f"                seed={spec.sources.sampling.seed})\n",
         "trainer = SFTTrainer(model=model, args=cfg, train_dataset=train_ds,\n",
         "                     processing_class=tok)\n",

@@ -19,7 +19,7 @@ SCHEMA_HINT = (
     "{field, op, value}}, llm_gap_fill {enabled, max_fraction}, default_benign_score, "
     "default_class), sources (local [{path, label_field}], public [{dataset, split, "
     "label_field}], sampling {per_class_cap, benign_cap, seed}), augmentation {enabled}, "
-    "output (train_split, max_seq_length, target_size {min, ideal}). "
+    "output (train_split, max_seq_length, max_steps, target_size {min, ideal}). "
     "Rules use ops: eq neq gt gte lt lte contains startswith endswith in regex. "
     "Do not invent label fields that are also input features."
 )

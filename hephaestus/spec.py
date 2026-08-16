@@ -82,6 +82,7 @@ class AugmentationConfig:
 class OutputConfig:
     train_split: float = 0.9
     max_seq_length: int = 512
+    max_steps: Optional[int] = None  # bounded Kaggle run; None = full epoch
     target_size: Dict[str, int] = field(
         default_factory=lambda: {"min": 800, "ideal": 4000})
 
@@ -178,6 +179,7 @@ def to_dict(spec: DatasetSpec) -> dict:
         "output": {
             "train_split": spec.output.train_split,
             "max_seq_length": spec.output.max_seq_length,
+            "max_steps": spec.output.max_steps,
             "target_size": spec.output.target_size,
         },
     }
@@ -251,7 +253,8 @@ def render_summary(spec: DatasetSpec) -> str:
         f"gap_fill={spec.labeling.llm_gap_fill.get('max_fraction', 0.15)})",
         f"Sources: {len(spec.sources.local)} local, {len(spec.sources.public)} public",
         f"Output: split={spec.output.train_split}, "
-        f"max_seq={spec.output.max_seq_length}",
+        f"max_seq={spec.output.max_seq_length}, "
+        f"max_steps={spec.output.max_steps or 'full-epoch'}",
     ]
     for r in spec.labeling.rules:
         lines.append(f"  rule: [{r.priority}] {r.when} -> "
