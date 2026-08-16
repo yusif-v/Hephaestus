@@ -55,3 +55,19 @@ def test_build_kernel_uses_rank_for_size():
     from hephaestus.kernel_builder import _kernel_source_for_size
     src = _kernel_source_for_size("accuracy")
     assert src["rank"] == MODEL_SIZES["accuracy"]["rank"]
+
+
+def test_notebook_explicitly_tokenizes_with_prompt_masking(tmp_path):
+    """Regression: the generated notebook must tokenize with apply_chat_template
+    and -100 prompt masking (proven v31 pattern), not pass raw messages to
+    SFTTrainer — raw-messages training produces garbage score|type output."""
+    result = build_kernel(
+        spec(), "latency", str(tmp_path),
+        dataset_slug="yusifovtelman/forge-filesystem-anomaly",
+        kernel_slug="yusifovtelman/forge-filesystem-anomaly-train",
+    )
+    src = open(result["notebook_path"]).read()
+    assert "def tok_fn(ex):" in src
+    assert "apply_chat_template" in src
+    assert "labels[:plen] = [-100] * plen" in src
+    assert "train_ds = train_ds.map(tok_fn, batched=False)" in src

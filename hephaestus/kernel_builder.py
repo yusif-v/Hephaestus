@@ -70,13 +70,28 @@ def _build_notebook(spec: DatasetSpec, size_cfg: Dict[str, Any]) -> dict:
     ]})
     cells.append({"cell_type": "code", "execution_count": None, "metadata": {},
                   "outputs": [], "source": [
+        "def tok_fn(ex):\n",
+        "    msgs = ex['messages']\n",
+        "    prompt = tok.apply_chat_template(msgs[:-1], add_generation_prompt=True, tokenize=False)\n",
+        "    full = tok.apply_chat_template(msgs, tokenize=False)\n",
+        "    enc = tok(full, max_length=%d, truncation=True)\n" % spec.output.max_seq_length,
+        "    plen = len(tok(prompt, add_special_tokens=False)['input_ids'])\n",
+        "    labels = enc['input_ids'].copy()\n",
+        "    labels[:plen] = [-100] * plen\n",
+        "    return {'input_ids': enc['input_ids'], 'attention_mask': enc['attention_mask'], 'labels': labels}\n",
+        "\n",
+        "train_ds = train_ds.map(tok_fn, batched=False)\n",
+    ]})
+    cells.append({"cell_type": "code", "execution_count": None, "metadata": {},
+                  "outputs": [], "source": [
         "from trl import SFTConfig, SFTTrainer\n",
         f"cfg = SFTConfig(output_dir='/kaggle/working/forge-lora',\n"
         f"                per_device_train_batch_size=8, gradient_accumulation_steps=4,\n"
         f"                num_train_epochs=1, learning_rate=2e-4, fp16=True,\n"
-        f"                max_length={spec.output.max_seq_length}, report_to='none',\n"
-        f"                save_strategy='epoch', seed={spec.sources.sampling.seed})\n",
-        "trainer = SFTTrainer(model=model, args=cfg, train_dataset=train_ds)\n",
+        f"                report_to='none', save_strategy='epoch',\n"
+        f"                seed={spec.sources.sampling.seed})\n",
+        "trainer = SFTTrainer(model=model, args=cfg, train_dataset=train_ds,\n",
+        "                     processing_class=tok)\n",
     ]})
     cells.append({"cell_type": "code", "execution_count": None, "metadata": {},
                   "outputs": [], "source": [
