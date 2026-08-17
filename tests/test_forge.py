@@ -102,3 +102,53 @@ def test_resume_interview_only_after_designed_stops_without_building(tmp_path, m
     assert calls["interview"] == 0
     assert calls["build"] == 0
     assert state["stage"] == "designed"
+
+
+def test_run_forge_pushes_and_pulls_when_enabled(tmp_path, monkeypatch):
+    """push_kernel=True drives the real Kaggle loop: upload dataset, push
+    kernel, poll, pull adapter — all stubbed, verifying the wiring and that
+    the adapter path is recorded in state."""
+    answers = iter([
+        "score|label",
+        "path, event, recent_count, score_v",
+        "Benign, RansomwareEncrypt, TempStaging",
+        "local tests/fixtures/events.jsonl",
+        ".crypt -> RansomwareEncrypt",
+        "small",
+    ])
+    monkeypatch.setattr("hephaestus.forge.ask_input", lambda *a: next(answers))
+    monkeypatch.setattr("hephaestus.forge.ask_size", lambda *a: "latency")
+
+    from tests.test_brain import GOOD_SPEC
+    monkeypatch.setattr("hephaestus.forge.design_spec", lambda draft: GOOD_SPEC)
+
+    calls = {"upload": 0, "push": 0, "pull": 0}
+    monkeypatch.setattr("hephaestus.forge._upload_dataset",
+                        lambda d: calls.__setitem__("upload", calls["upload"] + 1))
+    monkeypatch.setattr("hephaestus.forge._push_and_wait_kernel",
+                        lambda p, s: calls.__setitem__("push", calls["push"] + 1)
+                        or {"status": "COMPLETE", "checks": 2})
+
+    def fake_pull(slug, out_dir):
+        calls["pull"] += 1
+        adapter = os.path.join(out_dir, "forge-lora")
+        os.makedirs(adapter, exist_ok=True)
+        with open(os.path.join(adapter, "adapter_model.safetensors"), "w") as f:
+            f.write("x")
+        return adapter
+
+    monkeypatch.setattr("hephaestus.forge._pull_kernel_output", fake_pull)
+
+    state = run_forge(
+        out_dir=str(tmp_path),
+        dataset_slug="yusifovtelman/forge-test",
+        kernel_slug="yusifovtelman/forge-test-train",
+        push_kernel=True,
+    )
+    assert calls["upload"] == 1
+    assert calls["push"] == 1
+    assert calls["pull"] == 1
+    assert state["stage"] == "delivered"
+    assert state["kernel_status"] == "COMPLETE"
+    assert state["adapter_path"].endswith("forge-lora")
+    assert os.path.exists(os.path.join(str(tmp_path), "dataset_upload", "train.jsonl"))
