@@ -14,8 +14,15 @@ dependencies = [
     "trl>=0.9.0",
     "accelerate>=0.30.0",
     "datasets>=2.19.0",
-    "bitsandbytes>=0.43.0",
+    "bitsandbytes==0.46.1",
     "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# Pure-logic test deps (CPU only). Kept separate so the heavy train stack is
+# not required to run `pytest` in CI's CPU smoke job.
+test = [
+    "pytest>=7.0",
 ]
 
 [tool.setuptools.packages.find]
